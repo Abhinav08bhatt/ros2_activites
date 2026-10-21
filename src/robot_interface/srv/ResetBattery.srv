@@ -1,0 +1,4 @@
+int32 new_level
+---
+bool success
+string message

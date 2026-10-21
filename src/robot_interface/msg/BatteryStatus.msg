@@ -1,0 +1,3 @@
+string robot_name
+int32 battery_level
+bool is_charging

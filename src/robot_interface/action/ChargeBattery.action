@@ -1,0 +1,9 @@
+# Goal
+int32 target_level
+---
+# Result
+int32 final_level
+bool success
+---
+# Feedback
+int32 current_level
