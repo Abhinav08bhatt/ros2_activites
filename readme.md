@@ -1,6 +1,5 @@
 # ROS 2 — Technical Benchmarks & Practical Evaluations
 
----
 
 > **Project Scope & Attribution:**  
 > The challenge specifications, system requirements, and expected outputs in this document were generated with AI to serve as practice benchmarks.  
