@@ -1,0 +1,14 @@
+# Goal
+float64 target_x
+float64 target_y
+float64 payload_weight   # in kg
+---
+# Result
+bool reached
+float64 total_distance_traveled
+float64 distance_remaining
+float64 remaining_battery
+---
+# Feedback
+float64 distance_to_goal
+float64 current_battery

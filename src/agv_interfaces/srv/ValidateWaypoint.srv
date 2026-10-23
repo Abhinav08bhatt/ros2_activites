@@ -1,0 +1,8 @@
+# Request: proposed coordinates
+float64 target_x
+float64 target_y
+---
+# Response: is it allowed?
+bool is_valid
+float64 estimated_distance
+string reason

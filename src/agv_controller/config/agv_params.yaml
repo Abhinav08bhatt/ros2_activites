@@ -1,0 +1,21 @@
+/**:
+  # Parameters loaded by agv_node
+  agv_node:
+    ros__parameters:
+      # Spawn location in 2D space (meters)
+      spawn_x: 0.0
+      spawn_y: 0.0
+      linear_speed: 1.5
+      hazard_center_x: 5.0
+      hazard_center_y: 5.0
+      hazard_radius: 2.0
+
+      # Battery drain rate (% per meter traveled)
+      base_energy_rate: 0.5
+
+  # Default parameters if a dispatcher runs without CLI arguments
+  dispatcher_node:
+    ros__parameters:
+      goal_x: 6.0
+      goal_y: 6.0
+      cargo_weight: 10.0
