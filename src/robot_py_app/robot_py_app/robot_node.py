@@ -1,4 +1,4 @@
-'''robot_node.py | [sub] [service ser] [action ser] |
+'''robot_node.py | [pub] [service ser] [action ser] |
 
 PARAMETERS: 
     - robot_name : (Robby)
