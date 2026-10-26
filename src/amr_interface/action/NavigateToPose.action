@@ -1,0 +1,17 @@
+# Goal
+float64 goal_x
+float64 goal_y
+float64 tolerance
+---
+# Result
+bool reached
+float64 final_x
+float64 final_y
+float64 final_theta
+string termination_reason
+---
+# Feedback
+float64 current_x
+float64 current_y
+float64 current_theta
+float64 distance_remaining
