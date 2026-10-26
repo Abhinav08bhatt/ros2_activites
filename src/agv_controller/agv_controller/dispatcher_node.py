@@ -55,7 +55,7 @@ class Dispatcher(Node):
 
     def __init__(self):
 
-    # node name : agv_node
+    # node name : dispatcher_node
         super().__init__("dispatcher_node")
 
     # hardcoded variable(s)
@@ -247,7 +247,6 @@ class Dispatcher(Node):
 
 
 def main(args=None):
-# need to use multi-thread later on
     rclpy.init(args=args)
     node = Dispatcher()    
     try:
