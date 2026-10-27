@@ -36,7 +36,7 @@ The primary goal is to build a foundation in core ROS 2 communication and node a
 | :--- | :--- | :--- | :--- | :--- |
 | **01** | [Power & Charging Management Subsystem](#project-1-robot-power--charging-manager) | Beginner | Pub/Sub, Custom Interfaces, Services, Actions, Parameters | **COMPLETED** |
 | **02** | [AGV Waypoint Dispatcher & Geofence Monitor](#project-2-agv-waypoint-dispatcher--energy-monitor) | Intermediate | Multi-threading, Launch Files, Dynamic Energy Modeling, Geofencing | **COMPLETED** |
-| **03** | [Differential-Drive Kinematics & Path Tracker](#project-3-2d-differential-drive-kinematics--path-tracker) | Advanced | Closed-Loop Kinematics, Angle Wrapping, Emergency Brake, Param Validation | **IN PROGRESS** |
+| **03** | [Differential-Drive Kinematics & Path Tracker](#project-3-2d-differential-drive-kinematics--path-tracker) | Advanced | Closed-Loop Kinematics, Angle Wrapping, Emergency Brake, Param Validation | **COMPLETED** |
 
 ---
 
@@ -214,6 +214,7 @@ ros2 run agv_controller dispatcher_node --ros-args -p goal_x:=5.5 -p goal_y:=5.0
 # Project 3: 2D Differential-Drive Kinematics & Path Tracker
 **Status:** `IN PROGRESS` | **Level:** `Advanced / Systems Control`  
 **Packages:** `amr_interfaces` (`ament_cmake`), `amr_controller` (`ament_python`)
+**Files:** [AMR Controller](src/amr_controller), [AMR Interfaces](src/amr_interfaces)
 
 ### System Architecture
 This module implements a closed-loop trajectory tracker for a non-holonomic mobile robot in 2D continuous space. Rather than treating motion as abstracted translation, the system runs local heading control and forward kinematic integration over time increments $\Delta t$. Dynamic safety systems (real-time speed zones, emergency braking service, dynamic parameter clamping) override navigation commands at runtime.
