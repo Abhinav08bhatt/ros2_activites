@@ -84,12 +84,12 @@ class Supervisor(Node):
 
         self.declare_parameter(
             "goal_x",
-            2.0,
+            5.0,
             ParameterDescriptor(description = "Default : 10.0 (Float)")
         )
         self.declare_parameter(
             "goal_y",
-            2.0,
+            5.0,
             ParameterDescriptor(description = "Default : 10.0 (Float)")
         )
         self.declare_parameter(
@@ -125,11 +125,7 @@ class Supervisor(Node):
             EmergencyBreak,
             "/amr/emergency_break"
         )
-        if self.mode == "BREAK":
-            self.emergency_break_cli_timer = self.create_timer(
-                5.0,
-                self.emergency_break_cli_callback
-            )
+        self.break_engaged = False
 
     #* action client
         self._act_navigate_goal_cli = ActionClient(
@@ -181,10 +177,16 @@ class Supervisor(Node):
         self.future_result.add_done_callback(self._act_navigate_goal_result)
 
     def _act_navigate_goal_feedback(self,feedback_msg):
+
         feedback = feedback_msg.feedback
+        if feedback.distance_remaining < 1.50 and self.mode != "NORMAL" and not self.break_engaged:
+            self.break_engaged = True
+            self.emergency_break_cli_req_callback()
+            return
+        
         self.get_logger().info(
             f"[ACT CLI FEED] Navigating | Pose : ({feedback.current_x:.2f},{feedback.current_y:.2f},{feedback.current_theta:.2f}) | Remaining Distance : {feedback.distance_remaining:.2f} "
-        )        
+        )
 
     def _act_navigate_goal_result(self,future):
 
@@ -205,9 +207,29 @@ class Supervisor(Node):
             )
 
 # ===================================== service cli (5.0 | BREAK) ====================================
-    def emergency_break_cli_callback(self):
-        # get triggered after 5 sec if the mde is BREAK
-        pass
+    def emergency_break_cli_req_callback(self):
+        request = EmergencyBreak.Request()
+        request.engage_break = True
+
+        self.get_logger().warn(
+            "[SER CLI] Requesting Emergency Break | contacting /arm/emergency_break..."
+        )
+        
+        future = self._ser_emergency_break_cli.call_async(request)
+        future.add_done_callback(self.emergency_break_cli_response_callback)
+        
+    def emergency_break_cli_response_callback(self,future):
+        try:
+            response = future.result()
+            if response.success:
+                self.get_logger().warn(
+                    "[SER CLI] Emergency breaks applied | Mission stopped"
+                )
+                return
+            else:
+                self.get_logger().fatal("f[ACT SER] Service Failed Breaks not applied | need manual assistance")
+        except Exception as e:
+            self.get_logger().fatal("f[ACT SER] Service Failed Breaks not applied | {e}") 
 
 # ======================================= helper function (AI) =======================================
     def parameter_change_callback(self,params):

@@ -119,8 +119,10 @@ class Amr(Node):
         self._ser_emergency_break_ser = self.create_service(
             EmergencyBreak,
             "/amr/emergency_break",
-            self.emergency_break_ser_callback
+            self.emergency_break_ser_callback,
+            callback_group=self.cb_group
         )
+        self.emergency_break_applied = False
 
     #* action server
         self._act_navigate_goal_ser = ActionServer(
@@ -151,8 +153,16 @@ class Amr(Node):
 # =================================== service ser (BREAK | v = 0) ====================================
     def emergency_break_ser_callback(self,request,response):
 
-        pass
-
+        if request.engage_break:
+            self.emergency_break_applied = True
+            self.current_linear_velocity = 0
+            self.get_logger().warn(
+                f"[SER SER] Emergency break engaged | Motor stopped"
+            )
+            response.success = True
+            response.message = "Break applied successfully"
+            return response
+        
 # ====================================== action ser (navigate) =======================================
     def _act_navigate_goal_ser_callback(self,goal_handle):
 
@@ -175,7 +185,7 @@ class Amr(Node):
             result.final_theta = self.current_theta
             return result
 
-        while True:
+        while True and not self.emergency_break_applied:
 
             distance_remaining = self.goal_distance_current(self.current_x,self.current_y,goal_x,goal_y)
             if distance_remaining <= tolerance:
@@ -215,6 +225,23 @@ class Amr(Node):
             goal_handle.publish_feedback(feedback_msg)
 
             time.sleep(0.1)
+
+        self.get_logger().error(
+            f"[ACT ERROR] Aborting navigation | emergency break applied..."
+        )
+        goal_handle.abort()
+        result = NavigateToPose.Result()
+        result.reached = False
+        result.final_x = self.current_x
+        result.final_y = self.current_y
+        result.final_theta = self.current_theta
+        result.termination_reason = "BREAK APPLIED"
+        self.get_logger().error(
+            f"[ACT SER] MISSION ABORTED | Emergency break applied..."
+        )
+        self.current_linear_velocity = 0.0
+        self.current_angular_velocity = 0.0
+        return result
 
 # ================================= calculation functions (navigate) =================================
 
