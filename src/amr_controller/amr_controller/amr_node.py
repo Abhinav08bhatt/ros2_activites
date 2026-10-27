@@ -143,7 +143,7 @@ class Amr(Node):
         msg.angular_velocity = self.current_angular_velocity
 
         self.get_logger().info(
-            f"[PUB] Pose : ({self.current_x} , {self.current_y} , {self.current_theta}) | v : {self.current_linear_velocity} w : {self.current_angular_velocity}"
+            f"[PUB] Pose : ({self.current_x:.2f} , {self.current_y:.2f} , {self.current_theta:.2f}) | v : {self.current_linear_velocity:.2f} w : {self.current_angular_velocity:.2f}"
         )
 
         self._pub_odometer.publish(msg)        
@@ -161,7 +161,7 @@ class Amr(Node):
         tolerance = goal_handle.request.tolerance
 
         self.get_logger().info(
-            f"[ACT SER] Received nav goal | Goal pose : {goal_x,goal_y} | Tolerance : {tolerance}"
+            f"[ACT SER] Received nav goal | Goal pose : ({goal_x:.2f},{goal_y:.2f}) | Tolerance : {tolerance:.2f}"
         )
         if self.goal_distance_current(self.current_x,self.current_y,goal_x,goal_y) < tolerance:
             self.get_logger().error(
@@ -207,6 +207,10 @@ class Amr(Node):
             feedback_msg.current_y = self.current_y
             feedback_msg.current_theta = self.current_theta
             feedback_msg.distance_remaining = distance_remaining
+
+            self.get_logger().info(
+                f"[ACT SER FEED] Navigating... | Pose : ({self.current_x:.2f},{self.current_y:.2f},{self.current_theta:.2f}) | Remaining : {distance_remaining:.2f}"
+            )
             
             goal_handle.publish_feedback(feedback_msg)
 

@@ -94,7 +94,7 @@ class Supervisor(Node):
         )
         self.declare_parameter(
             "tolerance",
-            0.5,
+            0.1,
             ParameterDescriptor(description = "Default : 0.5 (Float)")
         )
         self.mode = self.get_parameter("mode").value
@@ -141,7 +141,7 @@ class Supervisor(Node):
 # ==================================== sub callback (log odometer) ===================================
     def _sub_odometer_callback_logger(self,msg):
         self.get_logger().info(
-            f"[SUB] Pose : ({msg.x} , {msg.y} , {msg.theta}) | v : {msg.linear_velocity} w : {msg.angular_velocity}"
+            f"[SUB] Pose : ({msg.x:.2f} , {msg.y:.2f} , {msg.theta:.2f}) | v : {msg.linear_velocity:.2f} w : {msg.angular_velocity:.2f}"
         )
 
         if not self._act_navigation_goal_sent:
@@ -183,7 +183,7 @@ class Supervisor(Node):
     def _act_navigate_goal_feedback(self,feedback_msg):
         feedback = feedback_msg.feedback
         self.get_logger().info(
-            f"[ACT FEED] Navigating | Pose : ({feedback.current_x},{feedback.current_y},{feedback.current_theta} | Remaining DIstance : {feedback.distance_remaining}) "
+            f"[ACT CLI FEED] Navigating | Pose : ({feedback.current_x:.2f},{feedback.current_y:.2f},{feedback.current_theta:.2f}) | Remaining Distance : {feedback.distance_remaining:.2f} "
         )        
 
     def _act_navigate_goal_result(self,future):
@@ -193,11 +193,11 @@ class Supervisor(Node):
 
         if status == GoalStatus.STATUS_SUCCEEDED and result.reached:
             self.get_logger().info(
-                f"[ACT RESULT] MISSION COMPLETED | Pose : ({result.final_x},{result.final_y},{result.final_theta}) "
+                f"[ACT RESULT] SUCCESS : {result.termination_reason} | Pose : ({result.final_x:.2f},{result.final_y:.2f},{result.final_theta:.2f}) "
             )
         elif status == GoalStatus.STATUS_ABORTED or not result.reached:
             self.get_logger().error(
-                f"[ACT RESULT] MISSION ABORTED | Reason : {result.termination_reason} | Pose : ({result.final_x},{result.final_y},{result.final_theta})"
+                f"[ACT RESULT] MISSION ABORTED | Reason : {result.termination_reason} | Pose : ({result.final_x:.2f},{result.final_y:.2f},{result.final_theta:.2f})"
             )
         else:
             self.get_logger().fatal(
