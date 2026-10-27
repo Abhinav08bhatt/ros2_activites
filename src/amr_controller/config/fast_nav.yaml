@@ -1,0 +1,12 @@
+/**:
+  amr_node:
+    ros__parameters:
+      linear_velocity_value: 1.0
+      angular_velocity_value: 2.2
+      angular_velocity_multiplayer: 3.0
+  supervisor_node:
+    ros__parameters:
+      mode: "NORMAL"
+      goal_x: 8.0
+      goal_y: -9.0
+      tolerance: 0.1
