@@ -5,7 +5,8 @@
 > The challenge specifications, system requirements, and expected outputs in this document were generated with AI to serve as practice benchmarks.  
 > 
 > All ROS 2 packages, node implementations, and mathematical logic were independently authored by me, with explicit notes wherever AI assistance was referenced.
-
+>
+> Topic name, executable name of nodes might not match the original question but the implementation is as described in the question
 ---
 
 ## Technical Scope & Architecture Overview
@@ -133,23 +134,6 @@ ros2 run robot_py_app monitor_node
 ### System Architecture
 An Automated Guided Vehicle (AGV) deployed in an indoor warehouse navigates in a continuous 2D Euclidean coordinate frame starting from origin `(0.0, 0.0)`. Destination waypoints dispatched by a fleet supervisor must undergo spatial clearance checking against a circular geofenced hazard zone prior to trajectory initiation. Energy consumption is modeled dynamically as a function of travel distance and cargo load.
 
-### Mathematical Formulation
-1. **Planar Euclidean Metric:**
-   $$\Delta x = x_{\text{target}} - x_{\text{current}}, \quad \Delta y = y_{\text{target}} - y_{\text{current}}$$
-   $$D = \sqrt{\Delta x^2 + \Delta y^2}$$
-
-2. **Normalized Kinematic Trajectory Step:**
-   For linear speed $v$ and discrete sampling interval $\Delta t$, distance increment is $S = v \times \Delta t$.
-   $$\text{If } D > S: \quad x_{k+1} = x_k + S \cdot \frac{\Delta x}{D}, \quad y_{k+1} = y_k + S \cdot \frac{\Delta y}{D}$$
-   $$\text{If } D \le S: \quad (x_{k+1}, y_{k+1}) = (x_{\text{target}}, y_{\text{target}})$$
-
-3. **Geofence Spatial Inclusion Test:**
-   A point $(x_{\text{target}}, y_{\text{target}})$ violates a circular hazard zone of center $(X_h, Y_h)$ and radius $R_h$ if:
-   $$(x_{\text{target}} - X_h)^2 + (y_{\text{target}} - Y_h)^2 \le R_h^2$$
-
-4. **Dynamic Energy Expenditure Model:**
-   $$\Delta E = S \times \left( \text{base\_drain} + 0.05 \times \text{payload\_weight} \right)$$
-
 ### Architectural Specifications
 * **Package Structure:**
   ```text
@@ -229,33 +213,6 @@ This module implements a closed-loop trajectory tracker for a non-holonomic mobi
        / 
       v (Velocity vector)
 ```
-
-### Mathematical Foundations
-
-#### 1. Planar Error State
-Given robot state $\mathbf{x} = [x, y, \theta]^T$ and target destination $\mathbf{x}^* = [x_{\text{goal}}, y_{\text{goal}}]^T$:
-$$\Delta x = x_{\text{goal}} - x, \quad \Delta y = y_{\text{goal}} - y$$
-$$\rho = \sqrt{\Delta x^2 + \Delta y^2}$$
-$$\theta_{\text{goal}} = \text{atan2}(\Delta y, \Delta x)$$
-
-#### 2. Angular Error Wrapping (Continuous Lie Algebra Projection)
-Direct subtraction produces phase discontinuities at $\pm \pi$. The error angle $\alpha$ must be strictly bound to $[-\pi, +\pi]$:
-$$\alpha = \text{atan2}\left(\sin(\theta_{\text{goal}} - \theta), \; \cos(\theta_{\text{goal}} - \theta)\right)$$
-
-#### 3. Closed-Loop Kinematic Controller
-The system utilizes a proportional heading steering law with heading-conditioned linear speed attenuation:
-$$\omega = \text{clamp}\left(K_{\alpha} \cdot \alpha, \; -\omega_{\text{max}}, \; \omega_{\text{max}}\right)$$
-$$v = v_{\text{max}} \cdot \max\left(0.0, \; \cos(\alpha)\right)$$
-
-> *Note:* When the target is positioned behind the chassis ($\cos(\alpha) < 0$), linear forward velocity is halted ($v = 0$), forcing the system to execute an in-place turn until alignment is re-established.
-
-#### 4. Forward Kinematic Integration (Euler Step)
-At control frequency $f = 10\text{ Hz}$ ($\Delta t = 0.1\text{ s}$):
-$$x_{k+1} = x_k + v \cos(\theta_k) \Delta t$$
-$$y_{k+1} = y_k + v \sin(\theta_k) \Delta t$$
-$$\theta_{k+1} = \text{atan2}\left(\sin(\theta_k + \omega \Delta t), \; \cos(\theta_k + \omega \Delta t)\right)$$
-
----
 
 ### Architectural Specifications
 
