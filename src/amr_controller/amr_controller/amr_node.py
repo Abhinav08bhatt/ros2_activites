@@ -155,7 +155,7 @@ class Amr(Node):
 
         if request.engage_break:
             self.emergency_break_applied = True
-            self.current_linear_velocity = 0
+            self.current_linear_velocity = 0.0
             self.get_logger().warn(
                 f"[SER SER] Emergency break engaged | Motor stopped"
             )
