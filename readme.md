@@ -43,7 +43,7 @@ The primary goal is to build a foundation in core ROS 2 communication and node a
 
 # Project 1: Robot Power & Charging Manager
 **Status:** `COMPLETED` | **Level:** `Beginner / Foundations`  
-**Packages:** `robot_interfaces` (`ament_cmake`), `robot_py_app` (`ament_python`)   
+**Packages:** `robot_interfaces` (`ament_cmake`), `robot_py_app` (`ament_python`)       
 **Files:**['Robot App'](src/robot_py_app) ['Robot Interface'](src/robot_interface)
 
 ### System Architecture
@@ -197,7 +197,7 @@ ros2 run agv_controller dispatcher_node --ros-args -p goal_x:=5.5 -p goal_y:=5.0
 
 # Project 3: 2D Differential-Drive Kinematics & Path Tracker
 **Status:** `IN PROGRESS` | **Level:** `Advanced / Systems Control`  
-**Packages:** `amr_interfaces` (`ament_cmake`), `amr_controller` (`ament_python`)
+**Packages:** `amr_interfaces` (`ament_cmake`), `amr_controller` (`ament_python`)     
 **Files:** [AMR Controller](src/amr_controller), [AMR Interfaces](src/amr_interfaces)
 
 ### System Architecture
