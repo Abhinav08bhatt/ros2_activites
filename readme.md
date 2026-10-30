@@ -531,6 +531,40 @@ However, the tool's physical offset from the mounting flange shifts when tools a
                                        │
                                        ▼
                              [workpiece_fiducial]
+
+┌──────────────────────────────┐
+│  vision_detector_mock.py     │
+│  (The Environment)           │
+│                              │
+│  Publishes TF:               │
+│  world -> marker_42          │
+└──────────────┬───────────────┘
+               │ (TF2 Data)
+               ▼
+┌─────────────────────────────────────────────────────────────┐
+│  servo_controller_node.py  <=== THIS IS THE BRAIN YOU WRITE │
+│                                                             │
+│  INPUTS:                                                    │
+│  1. Action Goal from User: "Align tool to marker_42"        │
+│  2. Service Call: "Tool length is 22 cm"                    │
+│  3. TF2 Buffer: Where is marker_42 relative to tool0?       │
+│                                                             │
+│  OUTPUTS:                                                   │
+│  1. Twist message: /arm/cartesian_velocity_cmd              │
+│  2. Action Feedback: "I am 5 cm away... 2 cm away..."       │
+│  3. Action Result: "aligned: True"                          │
+└──────────────┬──────────────────────────────────────────────┘
+               │ (Publishes /arm/cartesian_velocity_cmd)
+               ▼
+┌──────────────────────────────┐
+│  arm_kinematics_mock.py      │
+│  (The Robot Body)            │
+│                              │
+│  Listens to Twist velocity.  │
+│  Slides the flange frame     │
+│  forward in space!           │
+└──────────────────────────────┘
+
 ```
 
 ### Mathematical Foundations
