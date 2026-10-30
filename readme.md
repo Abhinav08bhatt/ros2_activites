@@ -349,40 +349,55 @@ Setting parameter failed: Parameter 'default_linear_speed' value 5.0 exceeds all
 
 ---
 
-# Project 4: Pan-Tilt Active Target Tracker & Frame Resolver
+# Project 4: 2-DOF Pan-Tilt Active Target Tracker
 **Status:** `OPEN` | **Level:** `Beginner / Foundations of Spatial Transforms`  
 **Packages:** `tracker_interfaces` (`ament_cmake`), `pantilt_tracker` (`ament_python`)
 
 ### System Architecture
-An industrial inspection station utilizes a 2-DOF pan-tilt camera head mounted on a riser stand (`riser_link` $\rightarrow$ `pan_link` $\rightarrow$ `tilt_link` $\rightarrow$ `camera_optical_frame`). A static conveyor frame exists in the workspace. An external vision detector broadcasts dynamic detections of a moving part relative to the conveyor.
+An industrial inspection station utilizes a 2-DOF pan-tilt camera head mounted on a riser stand (`world` $\rightarrow$ `riser_link` $\rightarrow$ `pan_link` $\rightarrow$ `tilt_link` $\rightarrow$ `camera_optical_frame`). 
 
-The tracker node must dynamically compute the target's position **relative to the camera's optical frame** using TF2 buffer transformations, calculate angular tracking errors, and execute an Action to slew the pan and tilt joints until the target is centered along the optical boresight ($Z$-axis).
+A static conveyor belt sits bolted to the floor in front of the robot (`world` $\rightarrow$ `conveyor_frame`). An object travels linearly along the belt (`conveyor_frame` $\rightarrow$ `target_object`).
+
+The tracking controller queries the TF2 buffer to discover where the moving object is **relative to the camera's optical frame**, calculates the optical boresight angular errors using trigonometry, and runs an Action Server to swivel the pan and tilt joints until the target sits centered along the camera's line of sight.
 
 ```
-   [world]
-      │
-      ├── (Static) ──> [riser_link] ──> [pan_link] (yaw: psi) ──> [tilt_link] (pitch: theta) ──> [camera_optical_frame]
-      │
-      └── (Static) ──> [conveyor_frame] ──> (Dynamic) ──> [target_object]
+       [world]
+          │
+          ├── (Static) ──> [riser_link]
+          │                     │
+          │                     └── (Dynamic: yaw psi) ──> [pan_link]
+          │                                                    │
+          │                                                    └── (Dynamic: pitch theta) ──> [tilt_link]
+          │                                                                                        │
+          │                                                                                        └── (Static offset) ──> [camera_optical_frame]
+          │
+          └── (Static) ──> [conveyor_frame]
+                                │
+                                └── (Dynamic: linear slide) ──> [target_object]
 ```
 
 ### Mathematical Foundations
-1. **Coordinate Frame Transformation Chain:**
-   Given the target pose in conveyor coordinates ${}^{\text{conv}}\mathbf{P}_{\text{obj}}$, the pose with respect to the camera optical frame is obtained via the TF2 transformation tree:
-   $${}^{\text{cam}}\mathbf{P}_{\text{obj}} = \left({}^{\text{world}}\mathbf{T}_{\text{cam}}\right)^{-1} \cdot {}^{\text{world}}\mathbf{T}_{\text{conv}} \cdot {}^{\text{conv}}\mathbf{P}_{\text{obj}} = {}^{\text{cam}}\mathbf{T}_{\text{conv}} \cdot {}^{\text{conv}}\mathbf{P}_{\text{obj}}$$
-   Where ${}^{A}\mathbf{T}_B \in SE(3)$ represents the homogeneous transformation matrix:
-   $${}^{A}\mathbf{T}_B = \begin{bmatrix} \mathbf{R}_{3\times3} & \mathbf{p}_{3\times1} \\ \mathbf{0}_{1\times3} & 1 \end{bmatrix}$$
 
-2. **Optical Boresight Error Calculation:**
-   In standard camera optical conventions ($Z$ forward, $X$ right, $Y$ down):
-   $$\text{Azimuth Error (Pan): } \Delta\alpha = \text{atan2}(x_{\text{cam}}, z_{\text{cam}})$$
-   $$\text{Elevation Error (Tilt): } \Delta\beta = \text{atan2}(-y_{\text{cam}}, \sqrt{x_{\text{cam}}^2 + z_{\text{cam}}^2})$$
+1. **TF2 Frame Resolution:**
+   The tracker node does not manually multiply matrices. It asks TF2 for the relative transform:
+   $${}^{\text{camera}}\mathbf{T}_{\text{target}} = \text{lookup\_transform}(\text{"camera\_optical\_frame"}, \text{"target\_object"})$$
+   This yields the target position vector relative to the camera lens:
+   $$\mathbf{P}_{\text{cam}} = \begin{bmatrix} x_{\text{cam}} & y_{\text{cam}} & z_{\text{cam}} \end{bmatrix}^T$$
+
+2. **Optical Boresight Angle Calculation:**
+   Standard optical frame convention: $+Z$ points forward along the lens, $+X$ points right, $+Y$ points down.
+   - **Pan Angle Error (Yaw about $Y$):**
+     $$\Delta\psi = \text{atan2}(x_{\text{cam}}, z_{\text{cam}})$$
+   - **Tilt Angle Error (Pitch about $X$):**
+     $$\Delta\theta = \text{atan2}(-y_{\text{cam}}, z_{\text{cam}})$$
+
+   *(When both $\Delta\psi \approx 0$ and $\Delta\theta \approx 0$, the object is dead center in the camera view).*
 
 ---
 
 ### Architectural Specifications
 
-* **Package Structure:**
+* **Package Layout:**
   ```text
   ros2_ws/src/
   ├── tracker_interfaces/
@@ -405,14 +420,13 @@ The tracker node must dynamically compute the target's position **relative to th
 * **Interface Contracts:**
   - **`msg/TrackingError.msg`:**
     ```text
-    builtin_interfaces/Time stamp
     float64 pan_error_deg
     float64 tilt_error_deg
     float64 distance_to_target
     ```
   - **`srv/SetTrackingMode.srv`:**
     ```text
-    string mode     # "IDLE", "CONTINUOUS", "HOLD"
+    string mode     # "IDLE", "TRACKING"
     ---
     bool success
     string message
@@ -420,13 +434,12 @@ The tracker node must dynamically compute the target's position **relative to th
   - **`action/CenterTarget.action`:**
     ```text
     # Goal
-    float64 angular_tolerance_deg
-    float64 timeout_seconds
+    float64 tolerance_deg
     ---
     # Result
     bool centered
-    float64 final_pan_error_deg
-    float64 final_tilt_error_deg
+    float64 final_pan_deg
+    float64 final_tilt_deg
     ---
     # Feedback
     float64 current_pan_error_deg
@@ -437,51 +450,60 @@ The tracker node must dynamically compute the target's position **relative to th
 
 ### Node Engineering Requirements
 
-#### 1. `pan_tilt_broadcaster.py`
-* Broadcasts static transforms: `world` $\rightarrow$ `riser_link` ($z = 0.5\text{m}$) and `world` $\rightarrow$ `conveyor_frame` ($x = 1.5\text{m}, y = 0.2\text{m}, z = 0.0\text{m}$).
-* Maintains internal joint states: $\psi$ (pan), $\theta$ (tilt).
-* Subscribes to `/joint_states` or internal state updates and publishes dynamic transforms at 30 Hz:
-  * `riser_link` $\rightarrow$ `pan_link` (Rotation about $Z$: $\psi$)
-  * `pan_link` $\rightarrow$ `tilt_link` (Rotation about $Y$: $\theta$)
-  * `tilt_link` $\rightarrow$ `camera_optical_frame` (Standard camera optical orientation offset: $-90^\circ$ yaw, $+90^\circ$ pitch).
+#### 1. `target_simulator.py` (The Environment)
+* **Static Broadcast:** `world` $\rightarrow$ `conveyor_frame` at $(x = 2.0\text{m}, y = -0.5\text{m}, z = 0.0\text{m})$.
+* **Dynamic Broadcast (20 Hz):** `conveyor_frame` $\rightarrow$ `target_object` moving back and forth along the conveyor's $Y$-axis:
+  $$y(t) = 0.8 \cdot \sin(0.5 \cdot t), \quad x = 0.0, \quad z = 0.2$$
+  *(Rotation is identity: $x=0, y=0, z=0, w=1$).*
 
-#### 2. `target_simulator.py`
-* Publishes a dynamic transform `conveyor_frame` $\rightarrow$ `target_object` moving in a harmonic pattern along $X$ and $Y$ at 20 Hz ($x(t) = 0.3\sin(0.5t), y(t) = 0.1\cos(0.5t)$).
+#### 2. `pan_tilt_broadcaster.py` (The Robot Structure)
+* Stores internal variables: `pan_angle` (rad) and `tilt_angle` (rad).
+* Subscribes to `/pan_tilt/joint_commands` (`geometry_msgs/msg/Vector3`) to update its internal angles.
+* **Broadcasts:**
+  * Static: `world` $\rightarrow$ `riser_link` at $(x=0, y=0, z=1.0\text{m})$.
+  * Dynamic: `riser_link` $\rightarrow$ `pan_link` (Rotated around $Z$ by `pan_angle`).
+  * Dynamic: `pan_link` $\rightarrow$ `tilt_link` (Rotated around $Y$ by `tilt_angle`).
+  * Static: `tilt_link` $\rightarrow$ `camera_optical_frame` (Standard optical alignment).
 
-#### 3. `track_controller_node.py`
-* Creates a `tf2_ros.Buffer` and `tf2_ros.TransformListener`.
-* Lookups `${}^{\text{camera\_optical\_frame}}\mathbf{T}_{\text{target\_object}}$` using `buffer.lookup_transform`.
-* Telemetry: Publishes `tracker_interfaces/msg/TrackingError` at 10 Hz.
-* Service: `/tracker/set_mode` (`SetTrackingMode`).
-* Action Server: `/tracker/center_target` (`CenterTarget`). Controls $\psi$ and $\theta$ to drive error within `angular_tolerance_deg`.
+#### 3. `track_controller_node.py` (The Brain)
+* Creates a `tf2_ros.Buffer` and `TransformListener`.
+* Subscribes/queries TF2 for `${}^{\text{camera\_optical\_frame}}\mathbf{T}_{\text{target\_object}}$`.
+* Publishes continuous telemetry on `/tracker/error` (`TrackingError`).
+* Service: `/tracker/set_mode` to enable/disable active tracking.
+* Action Server: `/tracker/center_target` (`CenterTarget`):
+  * Computes $\Delta\psi$ and $\Delta\theta$.
+  * Increments/commands joint angles to `/pan_tilt/joint_commands`.
+  * Succeeds once both errors fall within `tolerance_deg`.
 
 ---
 
 ### Acceptance Verification
 
+#### Terminal 1 — Start the World & Target
 ```bash
-# Terminal 1: Broadcaster
-ros2 run pantilt_tracker pan_tilt_broadcaster
-```
-```bash
-# Terminal 2: Target Simulator
 ros2 run pantilt_tracker target_simulator
 ```
+
+#### Terminal 2 — Start the Robot Mechanism
 ```bash
-# Terminal 3: Tracker Controller
+ros2 run pantilt_tracker pan_tilt_broadcaster
+```
+
+#### Terminal 3 — Start the Tracker Controller
+```bash
 ros2 run pantilt_tracker track_controller_node
 ```
+
+#### Terminal 4 — Dispatch Goal to Align Camera
 ```bash
-# Terminal 4: Trigger Slew Alignment Action
-ros2 action send_goal /tracker/center_target tracker_interfaces/action/CenterTarget "{angular_tolerance_deg: 0.5, timeout_seconds: 5.0}" --feedback
+ros2 action send_goal /tracker/center_target tracker_interfaces/action/CenterTarget "{tolerance_deg: 0.5}" --feedback
 ```
 ```text
-[INFO] [track_controller]: Received goal to center target within 0.50 deg.
-[INFO] [track_controller]: [Feedback] Pan Error: 14.32 deg | Tilt Error: -8.12 deg
-[INFO] [track_controller]: [Feedback] Pan Error: 7.15 deg  | Tilt Error: -3.80 deg
-[INFO] [track_controller]: [Feedback] Pan Error: 1.20 deg  | Tilt Error: -0.65 deg
-[INFO] [track_controller]: [Feedback] Pan Error: 0.28 deg  | Tilt Error: 0.14 deg
-[INFO] [track_controller]: Goal Succeeded. Target aligned within tolerance.
+[INFO] [track_controller]: Goal received. Current error -> Pan: 12.4 deg, Tilt: -8.1 deg
+[INFO] [track_controller]: [Feedback] Pan Error: 8.2 deg | Tilt Error: -4.3 deg
+[INFO] [track_controller]: [Feedback] Pan Error: 3.1 deg | Tilt Error: -1.2 deg
+[INFO] [track_controller]: [Feedback] Pan Error: 0.4 deg | Tilt Error: 0.2 deg
+[INFO] [track_controller]: Target aligned within 0.5 deg! Goal Succeeded.
 ```
 
 ---
