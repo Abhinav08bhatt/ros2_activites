@@ -1,0 +1,3 @@
+float64 pan_error_deg
+float64 tilt_error_deg
+float64 distance_to_target

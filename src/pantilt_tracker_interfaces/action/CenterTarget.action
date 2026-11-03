@@ -1,0 +1,8 @@
+float64 tolerance_deg
+---
+bool centered
+float64 final_pan_deg
+float64 final_tilt_deg
+---
+float64 current_pan_error_deg
+float64 current_tilt_error_deg
