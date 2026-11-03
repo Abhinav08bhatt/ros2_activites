@@ -351,7 +351,7 @@ Setting parameter failed: Parameter 'default_linear_speed' value 5.0 exceeds all
 
 # Project 4: 2-DOF Pan-Tilt Active Target Tracker
 **Status:** `OPEN` | **Level:** `Beginner / Foundations of Spatial Transforms`  
-**Packages:** `tracker_interfaces` (`ament_cmake`), `pantilt_tracker` (`ament_python`)
+**Packages:** `pantilt_tracker_interfaces` (`ament_cmake`), `pantilt_tracker` (`ament_python`)
 
 ### System Architecture
 An industrial inspection station utilizes a 2-DOF pan-tilt camera head mounted on a riser stand (`world` $\rightarrow$ `riser_link` $\rightarrow$ `pan_link` $\rightarrow$ `tilt_link` $\rightarrow$ `camera_optical_frame`). 
@@ -400,7 +400,7 @@ The tracking controller queries the TF2 buffer to discover where the moving obje
 * **Package Layout:**
   ```text
   ros2_ws/src/
-  ├── tracker_interfaces/
+  ├── pantilt_tracker_interfaces/
   │   ├── CMakeLists.txt
   │   ├── package.xml
   │   ├── msg/
@@ -496,7 +496,7 @@ ros2 run pantilt_tracker track_controller_node
 
 #### Terminal 4 — Dispatch Goal to Align Camera
 ```bash
-ros2 action send_goal /tracker/center_target tracker_interfaces/action/CenterTarget "{tolerance_deg: 0.5}" --feedback
+ros2 action send_goal /tracker/center_target pantilt_tracker_interfaces/action/CenterTarget "{tolerance_deg: 0.5}" --feedback
 ```
 ```text
 [INFO] [track_controller]: Goal received. Current error -> Pan: 12.4 deg, Tilt: -8.1 deg
