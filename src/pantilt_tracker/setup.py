@@ -26,7 +26,7 @@ setup(
         'console_scripts': [
             "target_simulator = pantilt_tracker.target_simulator:main",
             "pan_tilt_broadcaster = pantilt_tracker.pan_tilt_broadcaster:main",
-            "tracker_controller_node = pantilt_tracker.tracker_controller_node:main"
+            "track_controller_node = pantilt_tracker.track_controller_node:main"
         ],
     },
 )

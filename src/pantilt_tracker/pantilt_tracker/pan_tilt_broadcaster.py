@@ -37,7 +37,8 @@ class PanTilt(Node):
         self._sub_joint_commands = self.create_subscription(
             Vector3,
             "/pan_tilt/joint_commands",
-            self._update_transform
+            self._update_transform,
+            10
         )
 
         self._publish_static_transforms()
