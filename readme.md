@@ -467,7 +467,7 @@ The tracking controller queries the TF2 buffer to discover where the moving obje
 
 #### 3. `track_controller_node.py` (The Brain)
 * Creates a `tf2_ros.Buffer` and `TransformListener`.
-* Subscribes/queries TF2 for `${}^{\text{camera\_optical\_frame}}\mathbf{T}_{\text{target\_object}}$`.
+* Subscribes/queries TF2 for ${}^{\text{camera\_optical\_frame}}\mathbf{T}_{\text{target\_object}}$.
 * Publishes continuous telemetry on `/tracker/error` (`TrackingError`).
 * Service: `/tracker/set_mode` to enable/disable active tracking.
 * Action Server: `/tracker/center_target` (`CenterTarget`):
